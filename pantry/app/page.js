@@ -1,7 +1,7 @@
 "use client";
 import { Box, Stack, Typography, Button, Modal, TextField } from "@mui/material";
 import { firestore } from "@/firebase";
-import { collection, doc, query, getDocs, setDoc, deleteDoc} from "firebase/firestore";
+import { collection, doc, query, getDocs, setDoc, deleteDoc, getDoc} from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 // Modal styling
@@ -34,7 +34,8 @@ export default function Home() {
     const docs = await getDocs(snapshot);
     const pantryList = [];
     docs.forEach((doc) => {
-      pantryList.push(doc.id);
+      const data = doc.data();
+      pantryList.push({ name: doc.id, count: data.count || 0 }); // Ensure count is included
     });
     setPantry(pantryList);
   };
@@ -46,17 +47,34 @@ export default function Home() {
 
   // Add item to pantry
   const addItem = async (item) => {
-   const docRef = doc(collection(firestore,'pantry'), item)
-    await setDoc(docRef, {})
-    await updatePantry()
+    const docRef = doc(collection(firestore, 'pantry'), item);
+    // Check if item exists
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      // Update item count if it already exists
+      const {count} = docSnap.data();
+      await setDoc(docRef, { count: count + 1 })
+    } else {
+      // Create new item with count of 1
+      await setDoc(docRef, { count: 1 })
+  };
+    await updatePantry();
   };
 
- const removeItem = async (item) => {
-const docRef = doc(collection(firestore, 'pantry'), item)
- await deleteDoc(docRef)
- await updatePantry()
- }
-
+  const removeItem = async (item) => {
+    const docRef = doc(collection(firestore, 'pantry'), item)
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const {count} = docSnap.data();
+      if (count === 1) {
+        await deleteDoc(docRef);
+      } else {
+        await setDoc(docRef, { count: count - 1 })
+      }
+    }
+      await updatePantry();
+    
+  };
 
   return (
     <Box
@@ -91,7 +109,7 @@ const docRef = doc(collection(firestore, 'pantry'), item)
             <Button
               variant="outlined"
               onClick={() => {
-                addItem(itemName); // Fix: Passes itemName to addItem
+                addItem(itemName); // Passes itemName to addItem
                 setItemName(''); 
                 handleClose();
               }}
@@ -115,29 +133,29 @@ const docRef = doc(collection(firestore, 'pantry'), item)
           </Typography>
         </Box>
         <Stack width="800px" height="300px" spacing={2} overflow={'auto'}>
-          {pantry.map((i, index) => (
-           
+          {pantry.map(({ name, count }) => (
             <Box
-              key={index}
+              key={name}
               width="100%"
               minHeight="150px"
               display={'flex'}
               justifyContent={'space-between'}
-              
               alignItems={'center'}
               bgcolor={'#f0f0f0'}
-              paddingX= {2}
+              paddingX={5}
             >
               <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
-                
-              
-              {
-              // Capitalize first letter of item
-                i.charAt(0).toUpperCase() + i.slice(1)
+                {
+                  // Capitalize first letter of item
+                  name.charAt(0).toUpperCase() + name.slice(1)
                 }
               </Typography>
+
+              <Typography variant={'h3'} color={"#333"} textAlign={'center'}>
+                Quantity: {count}
+              </Typography>
            
-            <Button variant="contained" onClick={() => removeItem(i)}>Remove</Button>
+              <Button variant="contained" onClick={() => removeItem(name)}>Remove</Button>
             </Box>
           ))}
         </Stack>
