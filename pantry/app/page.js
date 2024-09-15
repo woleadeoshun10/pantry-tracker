@@ -1,60 +1,75 @@
 "use client";
-import { Box, Stack, Typography,Button, Modal,TextField} from "@mui/material";
-import {firestore} from "@/firebase";
-import {collection,query,getDocs } from "firebase/firestore";
+import { Box, Stack, Typography, Button, Modal, TextField } from "@mui/material";
+import { firestore } from "@/firebase";
+import { collection, doc, query, getDocs, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { getFirestore } from "firebase/firestore";
 
+// Modal styling
 const style = {
   position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
   width: 400,
-  bgcolor: 'White',
+  bgcolor: 'white',
   border: '2px solid #000',
   boxShadow: 24,
   p: 4,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 3,
 };
 
-//  Firebase configuration
 export default function Home() {
-  const [pantry, setPantry]= useState ([])
-
+  const [pantry, setPantry] = useState([]);
   const [open, setOpen] = useState(false);
+  const [itemName, setItemName] = useState(''); // Fix: Only one declaration of itemName
+
+  // Open and close modal
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const[itemName, setItemName] = useState('')
-
-
-  useEffect(() => {
-    const updatePantry = async () => {
-    const snapshot = query(collection(firestore, 'pantry'))
-    const docs = await getDocs(snapshot)
-    const pantryList = []
+  const updatePantry = async () => {
+    const snapshot = query(collection(firestore, 'pantry'));
+    const docs = await getDocs(snapshot);
+    const pantryList = [];
     docs.forEach((doc) => {
-    pantryList.push(doc.id)
-    })
-    console.log(pantryList)
-    setPantry(pantryList)
-    }
+      pantryList.push(doc.id);
+    });
+    setPantry(pantryList);
+  };
+
+  // Fetch pantry items on load
+  useEffect(() => {
+    updatePantry();
+  }, []);
+
+  // Add item to pantry
+  const addItem = async (item) => {
+   const docRef = doc(collection(firestore,'pantry'), item)
+   await setDoc(docRef, {})
     updatePantry()
+  };
 
-  }, [])
-  return ( 
-  <Box
-    width = "100vw" 
-    height ="100vh"
-    display={'flex'}
-    justifyContent={'center'}
-    flexDirection={'column'}
-    alignItems={'center'}
-    gap={2}
-    > 
+ const removeItem = async (item) => {
+const docRef = doc(collection(firestore, 'pantry'), item)
+await docRef.delete()
+updatePantry()
+ }
 
 
-    <Modal 
+  return (
+    <Box
+      width="100vw"
+      height="100vh"
+      display={'flex'}
+      justifyContent={'center'}
+      flexDirection={'column'}
+      alignItems={'center'}
+      gap={2}
+    >
+      {/* Modal for adding items */}
+      <Modal 
         open={open}
         onClose={handleClose}
         aria-labelledby="modal-modal-title"
@@ -64,55 +79,63 @@ export default function Home() {
           <Typography id="modal-modal-title" variant="h6" component="h2">
             Add Item
           </Typography>
-          <Stack width="100%" direction = {'row'} spacing ={2}>
-      <TextField id="outlined-basic" label="Item" variant="outlined" />
-      <Button variant="contained">Search</Button>  
-      </Stack>
-        </Box>
-        </Modal>
-     <Button variant="contained" onClick={handleOpen}>
-        Add</Button>
-     <Box border={'1px solid #333'}> 
-    <Box width ="800px" height ="100px" bgcolor={'#FFCCCB'} >
-    <Typography variant ={'h2'} color ={'#333'} textAlign = {'center'}>
-      Pantry Items
-      </Typography>
-      
-    </Box>
-      <Stack width ="800px" height= "300px" spacing ={2} overflow={'auto'}>
-
-      {pantry.map((i) => (
-        <Box
-          key={i}
-          width = "100%" 
-          minHeight ="150px"
-          display={'flex'}
-          justifyContent={'center'}
-          alignItems={'center'}
-          bgcolor={'#f0f0f0'}
-          >
-            
-            <Typography 
-            variant={'h3'}
-            color ={'#333'}
-            textAlign={'center'}
-            
-            
+          <Stack width="100%" direction={'row'} spacing={2}>
+            <TextField
+              id="outlined-basic"
+              label="Item"
+              variant="outlined"
+              fullWidth
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+            />
+            <Button
+              variant="outlined"
+              onClick={() => {
+                addItem(itemName); // Fix: Passes itemName to addItem
+                setItemName(''); 
+                handleClose();
+              }}
             >
-              {
-                //Capitalize the first letter item
-              i.charAt(0).toUpperCase() + i.slice(1)
-              }
-            </Typography>
-        
-          
-          </Box>
+              Add 
+            </Button>
+          </Stack>
+        </Box>
+      </Modal>
 
-      ))}
-     </Stack>
+      {/* Button to open modal */}
+      <Button variant="contained" onClick={handleOpen}>
+        Add 
+      </Button>
+
+      {/* Pantry Items Display */}
+      <Box border={'1px solid #333'}>
+        <Box width="800px" height="100px" bgcolor={'#FFCCCB'}>
+          <Typography variant={'h2'} color={'#333'} textAlign={'center'}>
+            Pantry Items
+          </Typography>
+        </Box>
+        <Stack width="800px" height="300px" spacing={2} overflow={'auto'}>
+          {pantry.map((i, index) => (
+           
+            <Box
+              key={index}
+              width="100%"
+              minHeight="150px"
+              display={'flex'}
+              justifyContent={'space-between'}
+              paddingY = {5}
+              alignItems={'center'}
+              bgcolor={'#f0f0f0'}
+            >
+              <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
+                {i.charAt(0).toUpperCase() + i.slice(1)}
+              </Typography>
+           
+            <Button variant="contained" onClick={() => removeItem(i)}>Remove</Button>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
     </Box>
-
-    </Box>
-
   );
 }
