@@ -1,7 +1,7 @@
 "use client";
 import { Box, Stack, Typography, Button, Modal, TextField } from "@mui/material";
 import { firestore } from "@/firebase";
-import { collection, doc, query, getDocs, setDoc } from "firebase/firestore";
+import { collection, doc, query, getDocs, setDoc, deleteDoc} from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 // Modal styling
@@ -47,14 +47,14 @@ export default function Home() {
   // Add item to pantry
   const addItem = async (item) => {
    const docRef = doc(collection(firestore,'pantry'), item)
-   await setDoc(docRef, {})
-    updatePantry()
+    await setDoc(docRef, {})
+    await updatePantry()
   };
 
  const removeItem = async (item) => {
 const docRef = doc(collection(firestore, 'pantry'), item)
-await docRef.delete()
-updatePantry()
+ await deleteDoc(docRef)
+ await updatePantry()
  }
 
 
@@ -109,7 +109,7 @@ updatePantry()
 
       {/* Pantry Items Display */}
       <Box border={'1px solid #333'}>
-        <Box width="800px" height="100px" bgcolor={'#FFCCCB'}>
+        <Box width="800px" height="100px" bgcolor={'#add8e6'}>
           <Typography variant={'h2'} color={'#333'} textAlign={'center'}>
             Pantry Items
           </Typography>
@@ -123,12 +123,18 @@ updatePantry()
               minHeight="150px"
               display={'flex'}
               justifyContent={'space-between'}
-              paddingY = {5}
+              
               alignItems={'center'}
               bgcolor={'#f0f0f0'}
+              paddingX= {2}
             >
               <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
-                {i.charAt(0).toUpperCase() + i.slice(1)}
+                
+              
+              {
+              // Capitalize first letter of item
+                i.charAt(0).toUpperCase() + i.slice(1)
+                }
               </Typography>
            
             <Button variant="contained" onClick={() => removeItem(i)}>Remove</Button>
