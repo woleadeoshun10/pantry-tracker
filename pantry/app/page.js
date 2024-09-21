@@ -127,7 +127,7 @@ export default function Home() {
 
       {/* Pantry Items Display */}
       <Box border={'1px solid #333'}>
-        <Box width="800px" height="100px" bgcolor={'#add8e6'}>
+        <Box width="800px" height="100px" bgcolor={'#BDBDBD'}>
           <Typography variant={'h2'} color={'#333'} textAlign={'center'}>
             Pantry Items
           </Typography>
